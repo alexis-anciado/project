@@ -4,7 +4,7 @@
 //V2.2 = CHANGING VOID LOOP/ CHANGING MAIN LOGIC OF IF-ELSE STATEMENTS 
 //V3 = LOGIC CONDITION: KEYPAD & RFID (AND INCLUSION OF LOCK BUTTON IN KEYPAD)
 //V4 = FIXED PIN CONFIGS
-
+//V4.2 = SIMPLIFY CODE & ADDING SOLENOID LOGIC
 
 
 #include <Keypad.h>
@@ -14,9 +14,10 @@
 #include <LiquidCrystal_I2C.h>
 #define SS_PIN 10
 #define RST_PIN 9
+#define RELAY_PIN 8
 
 String correctUID = "9B 89 DD 13"; 
-String correctPIN = "1234"; 
+String correctPIN = "1234ABC0"; 
 
 const byte ROWS = 4; 
 const byte COLS = 4; 
@@ -36,14 +37,20 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 bool rfidValidated = false;
 bool pinValidated = false;
 
+void enterPINandCard(){
+  lcd.clear();
+  lcd.print("Place card and");
+  lcd.setCursor(0, 1);
+  lcd.print("enter PIN:");
+}
+
 void setup() {
   lcd.begin(16, 2); 
   lcd.backlight();  
-  lcd.print("Place card and"); 
-  lcd.setCursor(0, 1);
-  lcd.print("enter PIN:");
+  enterPINandCard();
   SPI.begin(); 
   mfrc522.PCD_Init(); 
+  pinMode(RELAY_PIN, OUTPUT);
 }
 
 void ACCESS_GRANTED(){
@@ -79,10 +86,7 @@ void loop() {
       rfidValidated = false; 
     }
     delay(1000); 
-    lcd.clear();
-    lcd.print("Place card and");
-    lcd.setCursor(0, 1);
-    lcd.print("enter PIN:");
+    enterPINandCard();
   }
 
   char key = keypad.getKey();
@@ -104,19 +108,15 @@ void loop() {
         lcd.clear();
         lcd.print("ACCESS GRANTED:)");
         delay(2000); 
+        digitalWrite(RELAY_PIN, HIGH);
         rfidValidated = false;
         pinValidated = false;
       } else if (!rfidValidated) {
         lcd.clear();
         lcd.print("Please swipe card.");
         delay(2000);
-      }
-      
-      //define new void function
-      lcd.clear();
-      lcd.print("Place card and");
-      lcd.setCursor(0, 1);
-      lcd.print("enter PIN:");
+      }      
+      enterPINandCard();
     } 
     
     else if (key == '*') { 
@@ -124,16 +124,13 @@ void loop() {
       lcd.clear();
       lcd.print("Input cleared.");
       delay(1000);
-      lcd.clear();
-      lcd.print("Place card and");
-      lcd.setCursor(0, 1);
-      lcd.print("enter PIN:");
+      enterPINandCard();
      } 
     
-    else if (key == 'D'){ 
-      //digitalWrite(, ) 
+    else if (key == 'D'){  
       lcd.clear();
       lcd.print("Door is Locked");
+      digitalWrite(RELAY_PIN, LOW);
       delay(2000);
      } 
     
